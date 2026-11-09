@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABM Elections 2026-2027</title>
+  <link rel="icon" href="images/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top"><div class="wrap">
+    <img src="images/logo.png" alt="ABM logo">
+    <h1>ABM Elections <span>2026-2027</span></h1>
+  </div></header>
+
+  <main>
+    <h2 class="welcome">Welcome <b id="welcomeName"></b> to ABM elections 2026 voting page</h2>
+    <p class="endtime">End time: <b id="endTime"></b></p>
+    <p class="countdown" id="countdown"></p>
+
+    <div class="card profile">
+      <div class="details">
+        <p><b>Name:</b> <span id="name"></span></p>
+        <p><b>Candidate or voting person:</b> <span id="role"></span></p>
+        <p><b>User ID:</b> <span id="userId"></span></p>
+        <p><b>Status:</b> <span id="status" class="pill">Checking…</span></p>
+      </div>
+      <img id="photo" alt="">
+    </div>
+
+    <p class="msg" id="err" hidden></p>
+
+    <div class="actions">
+      <a class="btn secondary" href="candidates.html">See candidates</a>
+      <button class="btn" id="voteBtn" disabled>Vote</button>
+      <a class="btn" id="resultsBtn" href="results.html" hidden>See candidates for victory</a>
+    </div>
+    <p class="msg" id="voteMsg" hidden></p>
+
+    <a href="#" class="logout" id="logout">Log out</a>
+  </main>
+
+  <script type="module">
+    import { PEOPLE, RESULTS_TIME_LABEL, requireUser, getMyVote, votingClosed, resultsOpen,
+             startCountdown, showError, logout } from "./js/app.js";
+
+    const key = requireUser();
+    const me = PEOPLE[key];
+    const $ = (id) => document.getElementById(id);
+
+    $("welcomeName").textContent = me.name;
+    $("endTime").textContent = RESULTS_TIME_LABEL;
+    $("name").textContent = me.name;
+    $("role").textContent = me.candidate ? "Candidate" : "Voting person";
+    $("userId").textContent = me.userId;
+    $("photo").src = me.photo;
+    $("photo").alt = me.name;
+    startCountdown($("countdown"));
+    $("logout").onclick = (e) => { e.preventDefault(); logout(); };
+
+    if (resultsOpen()) $("resultsBtn").hidden = false;
+
+    try {
+      const vote = await getMyVote(key);
+      const status = $("status");
+      status.textContent = vote ? "Completed" : "Not completed";
+      status.classList.add(vote ? "done" : "notdone");
+
+      const btn = $("voteBtn");
+      if (vote) {
+        btn.textContent = "Already voted";
+      } else {
+        btn.disabled = false;
+        btn.onclick = () => {
+          if (votingClosed()) {
+            $("voteMsg").textContent = "Sorry, vote time is over.";
+            $("voteMsg").hidden = false;
+          } else {
+            location.href = "vote.html";
+          }
+        };
+      }
+    } catch (err) {
+      $("status").textContent = "Unknown";
+      showError($("err"), err);
+    }
+  </script>
+</body>
+</html>

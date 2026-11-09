@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABM Elections 2026-2027</title>
+  <link rel="icon" href="images/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top"><div class="wrap">
+    <img src="images/logo.png" alt="ABM logo">
+    <h1>ABM Elections <span>2026-2027</span></h1>
+  </div></header>
+
+  <main>
+    <form class="card login center" id="form">
+      <label for="code">Please write code</label>
+      <input id="code" type="password" inputmode="numeric" autocomplete="off" maxlength="10" required autofocus>
+      <button class="btn" type="submit">Enter</button>
+      <p class="msg" id="msg" hidden></p>
+    </form>
+  </main>
+
+  <script type="module">
+    import { login } from "./js/app.js";
+    const form = document.getElementById("form");
+    const msg = document.getElementById("msg");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const key = await login(document.getElementById("code").value);
+      if (key) {
+        location.href = "home.html";
+      } else {
+        msg.textContent = "Wrong code. Please try again.";
+        msg.hidden = false;
+      }
+    });
+  </script>
+</body>
+</html>

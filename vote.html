@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ABM Elections 2026-2027</title>
+  <link rel="icon" href="images/logo.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top"><div class="wrap">
+    <img src="images/logo.png" alt="ABM logo">
+    <h1>ABM Elections <span>2026-2027</span></h1>
+  </div></header>
+
+  <main>
+    <h2>Cast your vote</h2>
+    <p class="countdown" id="countdown"></p>
+    <div class="grid" id="grid"></div>
+    <p class="msg center" id="msg" hidden></p>
+    <div class="actions"><a class="btn secondary" href="home.html">Go back</a></div>
+  </main>
+
+  <script type="module">
+    import { PEOPLE, CANDIDATES, requireUser, getMyVote, castVote, votingClosed,
+             startCountdown, showError } from "./js/app.js";
+
+    const key = requireUser();
+    const grid = document.getElementById("grid");
+    const msg = document.getElementById("msg");
+    startCountdown(document.getElementById("countdown"));
+
+    function stop(text) {
+      grid.innerHTML = "";
+      msg.textContent = text;
+      msg.hidden = false;
+    }
+
+    try {
+      if (votingClosed()) {
+        stop("Sorry, vote time is over.");
+      } else if (await getMyVote(key)) {
+        stop("You have already voted. You cannot vote again.");
+      } else {
+        // Candidates cannot vote for themselves, so their own card is not shown.
+        const choices = CANDIDATES.filter(c => c !== key);
+        grid.innerHTML = choices.map(c => `
+          <div class="card person">
+            <img src="${PEOPLE[c].photo}" alt="${PEOPLE[c].name}">
+            <h3>${PEOPLE[c].name}</h3>
+            <button class="btn" data-c="${c}">Vote</button>
+          </div>`).join("");
+
+        grid.addEventListener("click", async (e) => {
+          const c = e.target.dataset && e.target.dataset.c;
+          if (!c) return;
+          if (!confirm(`Vote for ${PEOPLE[c].name}? You cannot change your vote later.`)) return;
+          grid.querySelectorAll("button").forEach(b => b.disabled = true);
+          try {
+            await castVote(key, c);
+            location.replace("thankyou.html");
+          } catch (err) {
+            if (err.message === "closed") stop("Sorry, vote time is over.");
+            else if (err.message === "already" || err.code === "permission-denied")
+              stop("Your vote could not be saved: you have already voted or voting time is over.");
+            else { showError(msg, err); grid.querySelectorAll("button").forEach(b => b.disabled = false); }
+          }
+        });
+      }
+    } catch (err) {
+      showError(msg, err);
+    }
+  </script>
+</body>
+</html>

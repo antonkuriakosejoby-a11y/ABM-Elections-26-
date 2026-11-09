@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // One document per voter: votes/{voterKey} = { candidate, votedAt }
+    match /votes/{voter} {
+      // Anyone on the site can read votes (needed for status + counting results).
+      allow read: if true;
+
+      // A vote can only be CREATED (never changed or deleted), so nobody can vote twice.
+      allow create: if voter in ['joby', 'anna', 'asha', 'aaron', 'anton']
+        && request.resource.data.keys().hasOnly(['candidate', 'votedAt'])
+        && request.resource.data.candidate in ['asha', 'aaron', 'joby']
+        && request.resource.data.candidate != voter            // no voting for yourself
+        && request.resource.data.votedAt == request.time
+        // Voting closes 16 Nov 2026 10:00 India time (= 04:30 UTC)
+        && request.time < timestamp.date(2026, 11, 16) + duration.value(270, 'm');
+
+      allow update, delete: if false;
+    }
+  }
+}
