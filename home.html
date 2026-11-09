@@ -69,7 +69,7 @@
         const winners = CANDIDATES.filter(c => counts[c] === top);
         const votesText = `<p style="font-size:20px;font-weight:700;margin:4px 0 10px">${top} vote${top === 1 ? "" : "s"}${winners.length > 1 ? " each" : ""}</p>`;
         if (top === 0) {
-          box.innerHTML = `<h2>No votes yet</h2>`;
+          box.hidden = true;   // nothing to show until someone votes
         } else if (winners.length === 1) {
           const w = PEOPLE[winners[0]];
           box.innerHTML = `<p>Winner of ABM company</p>
