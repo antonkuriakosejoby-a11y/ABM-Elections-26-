@@ -33,16 +33,17 @@
     <div class="actions">
       <a class="btn secondary" href="candidates.html">See candidates</a>
       <button class="btn" id="voteBtn" disabled>Vote</button>
-      <a class="btn" id="resultsBtn" href="results.html" hidden>See candidates for victory</a>
     </div>
     <p class="msg" id="voteMsg" hidden></p>
+
+    <div class="card center winner" id="winner" style="margin-top:28px" hidden></div>
 
     <a href="#" class="logout" id="logout">Log out</a>
   </main>
 
   <script type="module">
-    import { PEOPLE, RESULTS_TIME_LABEL, requireUser, getMyVote, votingClosed, resultsOpen,
-             startCountdown, showError, logout } from "./js/app.js";
+    import { PEOPLE, CANDIDATES, RESULTS_TIME_LABEL, requireUser, getMyVote, votingClosed, resultsOpen,
+             countVotes, startCountdown, showError, logout } from "./js/app.js";
 
     const key = requireUser();
     const me = PEOPLE[key];
@@ -58,7 +59,29 @@
     startCountdown($("countdown"));
     $("logout").onclick = (e) => { e.preventDefault(); logout(); };
 
-    if (resultsOpen()) $("resultsBtn").hidden = false;
+    // After the end time, show the winner of ABM company right on this page.
+    if (resultsOpen()) {
+      const box = $("winner");
+      box.hidden = false;
+      box.innerHTML = "<p>Counting votes…</p>";
+      countVotes().then(counts => {
+        const top = Math.max(...Object.values(counts));
+        const winners = CANDIDATES.filter(c => counts[c] === top);
+        if (top === 0) {
+          box.innerHTML = `<h2>No votes yet</h2>`;
+        } else if (winners.length === 1) {
+          const w = PEOPLE[winners[0]];
+          box.innerHTML = `<p>Winner of ABM company</p>
+            <img src="${w.photo}" alt="${w.name}">
+            <h2>${w.name}</h2>
+            <p class="congrats">🎉 Congratulations! 🎉</p>`;
+        } else {
+          box.innerHTML = `<p>Winners of ABM company (tie)</p>
+            <h2>${winners.map(c => PEOPLE[c].name).join(" and ")}</h2>
+            <p class="congrats">🎉 Congratulations! 🎉</p>`;
+        }
+      }).catch(err => { box.innerHTML = ""; showError(box, err); });
+    }
 
     try {
       const vote = await getMyVote(key);
