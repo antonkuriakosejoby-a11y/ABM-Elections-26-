@@ -67,17 +67,18 @@
       countVotes().then(counts => {
         const top = Math.max(...Object.values(counts));
         const winners = CANDIDATES.filter(c => counts[c] === top);
+        const votesText = `<p style="font-size:20px;font-weight:700;margin:4px 0 10px">${top} vote${top === 1 ? "" : "s"}${winners.length > 1 ? " each" : ""}</p>`;
         if (top === 0) {
           box.innerHTML = `<h2>No votes yet</h2>`;
         } else if (winners.length === 1) {
           const w = PEOPLE[winners[0]];
           box.innerHTML = `<p>Winner of ABM company</p>
             <img src="${w.photo}" alt="${w.name}">
-            <h2>${w.name}</h2>
+            <h2>${w.name}</h2>${votesText}
             <p class="congrats">🎉 Congratulations! 🎉</p>`;
         } else {
           box.innerHTML = `<p>Winners of ABM company (tie)</p>
-            <h2>${winners.map(c => PEOPLE[c].name).join(" and ")}</h2>
+            <h2>${winners.map(c => PEOPLE[c].name).join(" and ")}</h2>${votesText}
             <p class="congrats">🎉 Congratulations! 🎉</p>`;
         }
       }).catch(err => { box.innerHTML = ""; showError(box, err); });
