@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, doc, getDoc, setDoc, getDocs, collection, serverTimestamp
+  getFirestore, doc, getDoc, getDocs, collection, serverTimestamp, writeBatch
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig } from "./firebase-config.js";
 
@@ -12,10 +12,9 @@ import { firebaseConfig } from "./firebase-config.js";
 export const VOTING_END = new Date("2026-11-16T10:00:00+05:30");
 export const VOTING_END_LABEL = "16th November 2026, 10:00 AM";
 
-// "End time" shown on the welcome page. After this moment the
-// "See candidates for victory" button appears.
-export const RESULTS_TIME = new Date("2026-11-09T10:00:00+05:30");
-export const RESULTS_TIME_LABEL = "9th November 2026, 10:00 AM";
+// "End time" shown on the welcome page. After this moment the winner is shown.
+export const RESULTS_TIME = VOTING_END;
+export const RESULTS_TIME_LABEL = VOTING_END_LABEL;
 export function resultsOpen() { return Date.now() >= RESULTS_TIME.getTime(); }
 
 // Codes are stored as SHA-256 hashes so the real codes are not visible
@@ -50,9 +49,12 @@ export function getDb() {
   return db;
 }
 
+// "voted/{key}" only says THAT someone voted (not who for), so the status can be
+// checked without revealing votes. "votes/{key}" holds the choice and stays
+// secret until voting ends (enforced by firestore.rules).
 export async function getMyVote(key) {
-  const snap = await getDoc(doc(getDb(), "votes", key));
-  return snap.exists() ? snap.data() : null;
+  const snap = await getDoc(doc(getDb(), "voted", key));
+  return snap.exists();
 }
 
 export async function castVote(voterKey, candidateKey) {
@@ -60,7 +62,10 @@ export async function castVote(voterKey, candidateKey) {
   if (voterKey === candidateKey || !CANDIDATES.includes(candidateKey)) throw new Error("invalid");
   if (await getMyVote(voterKey)) throw new Error("already");
   // Firestore rules only allow creating this document once, so a person can never vote twice.
-  await setDoc(doc(getDb(), "votes", voterKey), { candidate: candidateKey, votedAt: serverTimestamp() });
+  const batch = writeBatch(getDb());
+  batch.set(doc(getDb(), "votes", voterKey), { candidate: candidateKey, votedAt: serverTimestamp() });
+  batch.set(doc(getDb(), "voted", voterKey), {});
+  await batch.commit();
 }
 
 export async function countVotes() {

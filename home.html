@@ -60,7 +60,7 @@
     $("logout").onclick = (e) => { e.preventDefault(); logout(); };
 
     // After the end time, show the winner of ABM company right on this page.
-    if (false && resultsOpen()) {   // winner box turned off for privacy
+    if (resultsOpen()) {
       const box = $("winner");
       box.hidden = false;
       box.innerHTML = "<p>Counting votes…</p>";
